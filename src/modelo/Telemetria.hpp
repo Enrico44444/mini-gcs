@@ -34,11 +34,30 @@ struct Bateria {
     double percentual = 0.0;  // 0 a 100
 };
 
+/// Velocidades do veículo, em m/s.
+struct Velocidade {
+    double solo_ms = 0.0;    // horizontal, em relação ao solo
+    double subida_ms = 0.0;  // positiva quando o veículo sobe
+};
+
+/// Qualidade do enlace com o veículo.
+struct Enlace {
+    int satelites = 0;
+    double sinal_radio_percent = 0.0;  // 0 a 100
+};
+
+/// Ponto de decolagem. Serve de referência para a distância de retorno.
+struct Home {
+    double latitude = 0.0;
+    double longitude = 0.0;
+    bool definido = false;  // false enquanto o autopiloto não informou o home
+
+    /// Distância horizontal, em metros, entre a posição informada e o home.
+    /// Devolve 0 se o home ainda não foi definido.
+    double distancia_m(const Posicao& posicao) const;
+};
+
 /// Fotografia completa do veículo em um instante.
-///
-/// TODO (aluno): acrescente os campos que o seu grupo for usar — velocidade no
-/// solo, taxa de subida, número de satélites, qualidade do enlace de rádio,
-/// distância até o ponto de decolagem, estado dos sensores...
 struct EstadoVeiculo {
     std::string modo_de_voo = "DESCONHECIDO";
     bool armado = false;
@@ -46,6 +65,9 @@ struct EstadoVeiculo {
     Atitude atitude{};
     Posicao posicao{};
     Bateria bateria{};
+    Velocidade velocidade{};
+    Enlace enlace{};
+    Home home{};
     Instante instante = std::chrono::steady_clock::now();
 
     /// Uma linha legível, usada pelo comando `status`.
@@ -54,5 +76,9 @@ struct EstadoVeiculo {
 
 /// Segundos decorridos entre dois instantes.
 double segundos_entre(Instante inicio, Instante fim);
+
+/// Distância horizontal, em metros. É calculada usando a fórmula de haversine, que obtém a distância de dois pontos em uma esfera.
+double distancia_entre_m(double latitude1, double longitude1,
+                         double latitude2, double longitude2);
 
 }  // namespace gcs
