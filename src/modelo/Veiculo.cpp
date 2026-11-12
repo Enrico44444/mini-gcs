@@ -41,6 +41,24 @@ void Veiculo::atualizar(const std::function<void(EstadoVeiculo&)>& modificacao) 
     }
 }
 
+std::string Veiculo::validar_modo(const std::string& modo) const {
+    std::string maiusculo;
+    for (char caractere : modo) {
+        maiusculo += static_cast<char>(std::toupper(static_cast<unsigned char>(caractere)));
+    }
+
+    const std::vector<std::string> aceitos = modos_suportados();
+    if (std::find(aceitos.begin(), aceitos.end(), maiusculo) != aceitos.end()) {
+        return maiusculo;
+    }
+
+    std::string disponiveis;
+    for (const std::string& aceito : aceitos) {
+        disponiveis += (disponiveis.empty() ? "" : ", ") + aceito;
+    }
+    throw ErroDeModo("modo '" + modo + "' inválido; disponíveis: " + disponiveis);
+}
+
 std::ostream& operator<<(std::ostream& fluxo, const Veiculo& veiculo) {
     return fluxo << veiculo.nome() << ": " << veiculo.estado().resumo();
 }
@@ -83,12 +101,21 @@ void VeiculoSimulado::laco_de_telemetria() {
     }
 }
 
-void VeiculoSimulado::alterar_modo_de_voo(const std::string& modo) {
-    std::string maiusculo;
-    for (char caractere : modo) {
-        maiusculo += static_cast<char>(std::toupper(static_cast<unsigned char>(caractere)));
-    }
-    atualizar([&maiusculo](EstadoVeiculo& estado) { estado.modo_de_voo = maiusculo; });
+std::vector<std::string> VeiculoSimulado::modos_suportados() const {
+    return {"STABILIZE", "GUIDED", "AUTO", "LOITER", "RTL", "HOLD", "LAND"};
 }
+
+void VeiculoSimulado::alterar_modo_de_voo(const std::string& modo) {
+    const std::string alvo = validar_modo(modo);
+    atualizar([&alvo](EstadoVeiculo& estado) { estado.modo_de_voo = alvo; });
+}
+
+// Provisório:
+void VeiculoSimulado::armar() { throw NaoImplementado("armar"); }
+void VeiculoSimulado::desarmar() { throw NaoImplementado("desarmar"); }
+void VeiculoSimulado::decolar(double /*altura_m*/) { throw NaoImplementado("decolar"); }
+void VeiculoSimulado::pousar() { throw NaoImplementado("pousar"); }
+void VeiculoSimulado::retornar_para_casa() { throw NaoImplementado("retornar_para_casa"); }
+void VeiculoSimulado::ir_para(double, double, double) { throw NaoImplementado("ir_para"); }
 
 }  // namespace gcs

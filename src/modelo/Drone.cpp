@@ -14,13 +14,6 @@
 namespace gcs {
 namespace {
 
-std::string para_maiusculas(std::string texto) {
-    std::transform(texto.begin(), texto.end(), texto.begin(), [](unsigned char letra) {
-        return static_cast<char>(std::toupper(letra));
-    });
-    return texto;
-}
-
 /// O MAVSDK imprime os enums com operator<<; é a forma mais simples de
 /// transformar um FlightMode em texto.
 template <typename T>
@@ -146,40 +139,40 @@ void Drone::iniciar_telemetria() {
     // set_rate_* do plugin Telemetry (o ArduPilot não implementa todos).
 }
 
+std::vector<std::string> Drone::modos_suportados() const {
+    return {"RTL", "HOLD", "LAND"};
+}
+
 void Drone::alterar_modo_de_voo(const std::string& modo) {
     if (!impl_->acoes) {
         throw ErroDeVeiculo("alterar_modo_de_voo() antes de conectar()");
     }
+    // Confere o modo antes de tudo. Se ele não for aceito, ErroDeModo é lançado
+    // com a lista de modos disponíveis.
+    const std::string alvo = validar_modo(modo);
     mavsdk::Action& acoes = *impl_->acoes;
 
-    // O MAVSDK não expõe "troque para o modo X" de forma genérica: ele oferece
-    // ações de alto nível. Mapeamos três delas como amostra.
-    //
-    // TODO (aluno): complete o mapa (GUIDED, AUTO, LOITER, STABILIZE...). Para
-    // os modos sem ação equivalente, use o plugin MavlinkPassthrough e envie
-    // MAV_CMD_DO_SET_MODE com o número do modo do ArduPilot.
+    // Cada modo de modos_suportados() precisa ter uma entrada aqui. Na Etapa 3
+    // vamos gerar as duas coisas a partir de uma única tabela.
     const std::map<std::string, std::function<mavsdk::Action::Result()>> acoes_por_modo{
         {"RTL", [&acoes] { return acoes.return_to_launch(); }},
         {"HOLD", [&acoes] { return acoes.hold(); }},
         {"LAND", [&acoes] { return acoes.land(); }},
     };
 
-    const std::string alvo = para_maiusculas(modo);
-    const auto encontrado = acoes_por_modo.find(alvo);
-    if (encontrado == acoes_por_modo.end()) {
-        std::string disponiveis;
-        for (const auto& par : acoes_por_modo) {
-            disponiveis += (disponiveis.empty() ? "" : ", ") + par.first;
-        }
-        throw NaoImplementado("modo '" + alvo + "'; disponíveis: " + disponiveis);
-    }
-
-    const mavsdk::Action::Result resultado = encontrado->second();
+    const mavsdk::Action::Result resultado = acoes_por_modo.at(alvo)();
     if (resultado != mavsdk::Action::Result::Success) {
         throw ErroDeVeiculo("o autopiloto recusou o modo " + alvo + ": " + para_texto(resultado));
     }
 }
 
+// Provisório:
+void Drone::armar() { throw NaoImplementado("armar"); }
+void Drone::desarmar() { throw NaoImplementado("desarmar"); }
+void Drone::decolar(double /*altura_m*/) { throw NaoImplementado("decolar"); }
+void Drone::pousar() { throw NaoImplementado("pousar"); }
+void Drone::retornar_para_casa() { throw NaoImplementado("retornar_para_casa"); }
+void Drone::ir_para(double, double, double) { throw NaoImplementado("ir_para"); }
 // TODO (aluno): implemente aqui os demais comandos, sempre delegando para o
 // plugin Action e convertendo o Result em exceção, como acima:
 //

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "modelo/Veiculo.hpp"
 
@@ -38,7 +39,14 @@ public:
 
     void conectar() override;
     void iniciar_telemetria() override;
+    std::vector<std::string> modos_suportados() const override;
     void alterar_modo_de_voo(const std::string& modo) override;
+    void armar() override;
+    void desarmar() override;
+    void decolar(double altura_m) override;
+    void pousar() override;
+    void retornar_para_casa() override;
+    void ir_para(double latitude, double longitude, double altitude_m) override;
 
 private:
     class Impl;  // esconde o MAVSDK deste cabeçalho

@@ -20,6 +20,13 @@ public:
     explicit ErroDeVeiculo(const std::string& mensagem) : std::runtime_error(mensagem) {}
 };
 
+/// Modo de voo que o usuário pediu e que esta implementação não aceita.
+/// É um erro de uso, por isso é diferente de NaoImplementado.
+class ErroDeModo : public std::invalid_argument {
+public:
+    explicit ErroDeModo(const std::string& mensagem) : std::invalid_argument(mensagem) {}
+};
+
 /// Operação que ainda é exercício da disciplina. O console trata esta exceção
 /// de forma amigável, então dá para registrar o esqueleto de um recurso antes
 /// de implementá-lo.
@@ -62,23 +69,29 @@ public:
     // --- observer ----------------------------------------------------------
     void registrar_observador(Observador observador);
 
-    // --- operações que toda subclasse precisa implementar ------------------
+    // --- conexão e telemetria ----------------------------------------------
     /// Estabelece a conexão; só retorna quando o veículo responder.
     /// Lança ErroDeVeiculo em caso de falha.
     virtual void conectar() = 0;
     /// Assina os fluxos de telemetria (não bloqueia: os dados chegam por callback).
     virtual void iniciar_telemetria() = 0;
-    /// Pede ao autopiloto a troca do modo de voo.
+
+    // --- modos de voo ------------------------------------------------------
+    /// Modos que esta implementação aceita, em maiúsculas.
+    virtual std::vector<std::string> modos_suportados() const = 0;
+    /// Pede ao autopiloto a troca do modo de voo. Lança ErroDeModo se o modo
+    /// não estiver em modos_suportados().
     virtual void alterar_modo_de_voo(const std::string& modo) = 0;
 
-    // TODO (aluno): declare aqui o resto do contrato que a sua GCS precisa e
-    // implemente nas subclasses:
-    //
-    //     virtual void armar() = 0;
-    //     virtual void desarmar() = 0;
-    //     virtual void decolar(double altura_m) = 0;
-    //     virtual void pousar() = 0;
-    //     virtual void retornar_para_casa() = 0;
+    // --- comandos de voo ---------------------------------------------------
+    virtual void armar() = 0;
+    virtual void desarmar() = 0;
+    /// Decola até a altura relativa pedida, em metros.
+    virtual void decolar(double altura_m) = 0;
+    virtual void pousar() = 0;
+    virtual void retornar_para_casa() = 0;
+    /// Voa até a posição global dada, mantendo a altitude em metros.
+    virtual void ir_para(double latitude, double longitude, double altitude_m) = 0;
 
 protected:
     /// Modifica o estado e notifica os observadores.
@@ -87,6 +100,11 @@ protected:
     ///
     ///     atualizar([&](EstadoVeiculo& e) { e.modo_de_voo = "GUIDED"; });
     void atualizar(const std::function<void(EstadoVeiculo&)>& modificacao);
+
+    /// Converte o modo para maiúsculas e confere se ele está em
+    /// modos_suportados(). Devolve o nome normalizado ou lança ErroDeModo.
+    /// As subclasses chamam esta função antes de pedir a troca de modo.
+    std::string validar_modo(const std::string& modo) const;
 
 private:
     std::string nome_;
@@ -111,7 +129,14 @@ public:
 
     void conectar() override;
     void iniciar_telemetria() override;
+    std::vector<std::string> modos_suportados() const override;
     void alterar_modo_de_voo(const std::string& modo) override;
+    void armar() override;
+    void desarmar() override;
+    void decolar(double altura_m) override;
+    void pousar() override;
+    void retornar_para_casa() override;
+    void ir_para(double latitude, double longitude, double altitude_m) override;
 
 private:
     void laco_de_telemetria();
