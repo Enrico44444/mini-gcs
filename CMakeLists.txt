@@ -34,6 +34,7 @@ add_executable(mini_gcs
 target_include_directories(mini_gcs PRIVATE src)
 
 target_link_libraries(mini_gcs PRIVATE MAVSDK::mavsdk Threads::Threads)
+target_compile_definitions(mini_gcs PRIVATE MAVSDK_ENABLE_MAVLINK_C_API)
 
 target_compile_options(mini_gcs PRIVATE -Wall -Wextra -Wpedantic)
 

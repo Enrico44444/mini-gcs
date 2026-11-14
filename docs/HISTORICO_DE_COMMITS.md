@@ -29,3 +29,24 @@ Adicionado:
 Pendente:
 
 - `Drone` ainda aceita só RTL, HOLD e LAND, enquanto o simulado aceita 7 modos. A lista será unificada na Etapa 3.
+
+## Commit 3: Etapa 3, implementação real com MAVSDK
+
+Branch: `etapa-3-drone`
+
+Adicionado:
+
+- `armar`, `desarmar`, `decolar`, `pousar`, `retornar_para_casa` e `ir_para` implementados em `Drone`, usando `mavsdk::Action`
+- Modos de voo por `MAV_CMD_DO_SET_MODE` (`MavlinkPassthrough`) para STABILIZE, ALT_HOLD, LOITER, GUIDED e AUTO. RTL e LAND usam ações do MAVSDK
+- Lista única de modos em `modos_de_voo_conhecidos()`, usada por `Drone` e `VeiculoSimulado`. Removido HOLD; incluídos ALT_HOLD e LOITER
+- Telemetria estendida: velocidade no solo e de subida, número de satélites, sinal de rádio e home
+- `nome_do_modo()` traduz os modos do MAVSDK para os nomes do projeto
+- Assinaturas do MAVSDK canceladas no destrutor de `Drone`
+- `ir_para` converte a altitude relativa ao ponto de decolagem para a altitude absoluta que o MAVSDK espera
+- `CMakeLists.txt` recebeu a macro `MAVSDK_ENABLE_MAVLINK_C_API`, necessária para compilar com `MavlinkPassthrough`
+
+Pendente:
+
+- Validação com o SITL.
+- Comandos `armar`, `desarmar`, `pousar` e `ir_para` ainda não estão no console (Etapa 5)
+- `VeiculoSimulado` ainda não reage aos comandos de voo (Etapa 4)

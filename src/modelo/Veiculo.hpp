@@ -116,6 +116,11 @@ private:
 /// Permite `std::cout << veiculo` (usado pelo comando `status`).
 std::ostream& operator<<(std::ostream& fluxo, const Veiculo& veiculo);
 
+/// Lista única de modos de voo do projeto. Todas as implementações aceitam
+/// exatamente estes, para que o console se comporte igual com o drone real e
+/// com o simulado.
+const std::vector<std::string>& modos_de_voo_conhecidos();
+
 /// Veículo falso: gera telemetria sintética, sem precisar do SITL ligado.
 ///
 /// Serve de segundo exemplo de herança — a estação de controle não sabe (nem
@@ -136,8 +141,8 @@ public:
     void decolar(double altura_m) override;
     void pousar() override;
     void retornar_para_casa() override;
+    /// Voa até a posição global dada. A altitude é relativa ao ponto de decolagem, em metros.
     void ir_para(double latitude, double longitude, double altitude_m) override;
-
 private:
     void laco_de_telemetria();
 

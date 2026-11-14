@@ -59,6 +59,12 @@ std::string Veiculo::validar_modo(const std::string& modo) const {
     throw ErroDeModo("modo '" + modo + "' inválido; disponíveis: " + disponiveis);
 }
 
+const std::vector<std::string>& modos_de_voo_conhecidos() {
+    static const std::vector<std::string> modos{
+        "STABILIZE", "ALT_HOLD", "LOITER", "GUIDED", "AUTO", "RTL", "LAND"};
+    return modos;
+}
+
 std::ostream& operator<<(std::ostream& fluxo, const Veiculo& veiculo) {
     return fluxo << veiculo.nome() << ": " << veiculo.estado().resumo();
 }
@@ -102,7 +108,7 @@ void VeiculoSimulado::laco_de_telemetria() {
 }
 
 std::vector<std::string> VeiculoSimulado::modos_suportados() const {
-    return {"STABILIZE", "GUIDED", "AUTO", "LOITER", "RTL", "HOLD", "LAND"};
+    return modos_de_voo_conhecidos();
 }
 
 void VeiculoSimulado::alterar_modo_de_voo(const std::string& modo) {

@@ -1,6 +1,7 @@
 // Implementação de gcs::Veiculo usando MAVSDK (ArduPilot).
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -22,9 +23,6 @@ std::string normalizar_endereco(const std::string& endereco);
 ///
 /// Esta é a ÚNICA classe do projeto que conhece o MAVSDK — e, graças ao idioma
 /// *pimpl* (o ponteiro `impl_` abaixo), nem este cabeçalho inclui a biblioteca.
-/// Todo o resto da GCS conversa apenas com a abstração gcs::Veiculo, o que
-/// permite trocar o autopiloto, ou testar a interface com gcs::VeiculoSimulado,
-/// sem mexer em uma linha do console ou dos painéis.
 class Drone : public Veiculo {
 public:
     /// Endereço padrão do ArduPilot SITL rodando na própria máquina.
@@ -50,6 +48,12 @@ public:
 
 private:
     class Impl;  // esconde o MAVSDK deste cabeçalho
+
+    /// Lança ErroDeVeiculo se ainda não houve conexão.
+    void exigir_conexao() const;
+    /// Envia MAV_CMD_DO_SET_MODE com o número de modo do ArduCopter.
+    void enviar_modo_customizado(std::uint32_t numero);
+
     std::unique_ptr<Impl> impl_;
     std::string endereco_;
 };
