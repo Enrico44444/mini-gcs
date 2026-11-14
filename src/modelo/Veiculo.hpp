@@ -90,7 +90,7 @@ public:
     virtual void decolar(double altura_m) = 0;
     virtual void pousar() = 0;
     virtual void retornar_para_casa() = 0;
-    /// Voa até a posição global dada, mantendo a altitude em metros.
+    /// Voa até a posição global dada. A altitude é relativa ao ponto de decolagem, em metros.
     virtual void ir_para(double latitude, double longitude, double altitude_m) = 0;
 
 protected:
@@ -103,7 +103,6 @@ protected:
 
     /// Converte o modo para maiúsculas e confere se ele está em
     /// modos_suportados(). Devolve o nome normalizado ou lança ErroDeModo.
-    /// As subclasses chamam esta função antes de pedir a troca de modo.
     std::string validar_modo(const std::string& modo) const;
 
 private:
@@ -121,12 +120,13 @@ std::ostream& operator<<(std::ostream& fluxo, const Veiculo& veiculo);
 /// com o simulado.
 const std::vector<std::string>& modos_de_voo_conhecidos();
 
-/// Veículo falso: gera telemetria sintética, sem precisar do SITL ligado.
+/// Veículo falso: simula física simples de um multirrotor, sem precisar do SITL.
 ///
-/// Serve de segundo exemplo de herança — a estação de controle não sabe (nem
-/// precisa saber) se está falando com o ArduPilot ou com esta classe. Use
-/// `./mini_gcs --simulado` para desenvolver a interface no avião, no ônibus,
-/// em qualquer lugar.
+/// Reage aos comandos de voo como um drone real: só arma no solo, decola
+/// até a altura pedida, se desloca até os destinos, volta ao home no RTL e
+/// pousa e desarma ao tocar o chão. A bateria cai enquanto o veículo voa.
+///
+/// Use `./mini_gcs --simulado` para desenvolver a interface sem o simulador.
 class VeiculoSimulado : public Veiculo {
 public:
     explicit VeiculoSimulado(std::string nome = "simulado");
@@ -141,13 +141,55 @@ public:
     void decolar(double altura_m) override;
     void pousar() override;
     void retornar_para_casa() override;
-    /// Voa até a posição global dada. A altitude é relativa ao ponto de decolagem, em metros.
     void ir_para(double latitude, double longitude, double altitude_m) override;
+
 private:
+    // Parâmetros da física simplificada.
+    static constexpr double VELOCIDADE_SUBIDA_MS = 2.5;
+    static constexpr double VELOCIDADE_DESCIDA_MS = 1.0;
+    static constexpr double VELOCIDADE_HORIZONTAL_MS = 5.0;
+    static constexpr double ALTURA_RTL_M = 15.0;
+    static constexpr double CONSUMO_BATERIA_POR_S = 0.02;  // percentual por segundo em voo
+    static constexpr double ALTITUDE_SOLO_AMSL_M = 584.0;
+    static constexpr double LATITUDE_BASE = -35.363262;    // mesmo ponto do SITL
+    static constexpr double LONGITUDE_BASE = 149.165237;
+    static constexpr double METROS_POR_GRAU = 111320.0;
+
     void laco_de_telemetria();
+    /// Avança a simulação em `dt` segundos. Exige sim_mutex_ travado.
+    void avancar_locked(double dt);
+    /// Monta o estado público a partir da simulação. Exige sim_mutex_ travado.
+    EstadoVeiculo montar_estado_locked() const;
+    /// Publica um estado já montado para os observadores.
+    void publicar(const EstadoVeiculo& estado);
+    /// Lógica de pouso e de RTL, chamadas tanto pelos comandos quanto por
+    /// alterar_modo_de_voo. Exigem sim_mutex_ travado.
+    void pousar_locked();
+    void retornar_locked();
 
     std::atomic<bool> parar_{false};
     std::thread thread_;
+
+    // Estado da simulação, protegido por sim_mutex_.
+    mutable std::mutex sim_mutex_;
+    bool armado_ = false;
+    bool em_voo_ = false;
+    bool pousando_ = false;
+    bool tem_destino_ = false;
+    std::string modo_ = "STABILIZE";
+    double altitude_m_ = 0.0;
+    double altitude_alvo_m_ = 0.0;
+    double latitude_ = LATITUDE_BASE;
+    double longitude_ = LONGITUDE_BASE;
+    double latitude_alvo_ = LATITUDE_BASE;
+    double longitude_alvo_ = LONGITUDE_BASE;
+    double latitude_home_ = LATITUDE_BASE;
+    double longitude_home_ = LONGITUDE_BASE;
+    double bateria_pct_ = 100.0;
+    double vel_solo_ms_ = 0.0;
+    double vel_subida_ms_ = 0.0;
+    double guinada_ = 0.0;
+    double tempo_s_ = 0.0;
 };
 
 }  // namespace gcs

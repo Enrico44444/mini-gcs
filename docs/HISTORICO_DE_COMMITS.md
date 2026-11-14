@@ -50,3 +50,42 @@ Pendente:
 - Validação com o SITL.
 - Comandos `armar`, `desarmar`, `pousar` e `ir_para` ainda não estão no console (Etapa 5)
 - `VeiculoSimulado` ainda não reage aos comandos de voo (Etapa 4)
+
+## Commit 4: Etapa 4, VeiculoSimulado reage aos comandos de voo
+
+Branch: `etapa-4-simulado`
+
+Adicionado:
+
+- Estado interno da simulação em `VeiculoSimulado`, protegido por `sim_mutex_`: armado, em voo, pousando, destino, altitude alvo, posição, home, bateria e velocidades
+- `armar` e `desarmar` com recusa em voo
+- `decolar(altura)`: exige armado, registra o ponto atual como home e sobe em velocidade constante até a altura pedida
+- `pousar`: desce em velocidade constante e desarma ao tocar o solo
+- `retornar_para_casa`: sobe até 15 m se estiver mais baixo, volta ao home em linha reta e pousa ao chegar
+- `ir_para(lat, lon, altitude)`: desloca em linha reta até o destino, com a guinada apontando para o alvo
+- `alterar_modo_de_voo`: RTL e LAND acionam os mesmos comportamentos dos comandos correspondentes, e os demais modos só trocam o nome
+- Velocidade no solo e de subida calculadas a partir do deslocamento real, e distância ao home pela função da Etapa 1
+- Bateria cai só com o veículo em voo, a uma taxa constante
+- Passo de simulação limitado a 0,2 s, para evitar saltos se a thread atrasar
+
+Decisões de projeto:
+
+- Versão realista da simulação, com física simplificada e velocidades constantes, em vez de altitude linear. Assim a telemetria de velocidade e de distância ao home é exercitada.
+- Lógica de voo concentrada em `avancar_locked`, chamada pela thread de telemetria, e os comandos apenas alteram o estado de alvo. Os comandos não mexem diretamente na posição.
+- Erros de sequência (decolar sem armar, pousar no solo) usam `ErroDeVeiculo`, com a mesma exceção do `Drone`, para que o console trate os dois casos igual.
+- Sem ruído nos sensores nem atraso de comando, para que os testes sejam determinísticos.
+
+Verificação realizada:
+
+- [x] Compila com `-Wall -Wextra` (o aviso de `send_command_long` depreciado é da Etapa 3)
+- [x] Teste da sequência armar → decolar 10 → ir_para ~50 m → RTL → pouso, com 12 verificações. Todas passaram
+- [x] Recusas: decolar sem armar, pousar no solo e modo HOLD
+- [x] Distância ao home de ~49 m no destino, e pouso a menos de 2 m do home
+- [x] Bateria consumida durante o voo (99,2 % ao pousar)
+
+Pendente:
+
+- O teste está em `/tmp/teste_simulado.cpp`, fora do projeto. Na Etapa 6, ele deve ir para uma pasta `tests/`, integrado ao CMake com `ctest`
+- No simulado, após o pouso o modo continua `RTL`. O ArduPilot real trocaria para `LAND` ou desarmaria. Vale decidir se o simulado deve refletir isso
+- `decolar` no console ainda mostra "ainda não implementado" (Etapa 5)
+- Validação do `Drone` com o SITL continua pendente, como registrado na Etapa 3
