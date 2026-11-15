@@ -1,12 +1,8 @@
 // Objetos de valor que representam a telemetria de um veículo.
-//
-// São structs simples e copiáveis: cada pacote de telemetria que chega gera um
-// novo EstadoVeiculo completo, em vez de alterar campos espalhados pelo
-// programa. Copiar um estado é baratíssimo e torna o acesso entre threads
-// (a telemetria do MAVSDK chega em outra thread) muito mais simples de acertar.
 #pragma once
 
 #include <chrono>
+#include <limits>
 #include <string>
 
 namespace gcs {
@@ -43,7 +39,7 @@ struct Velocidade {
 /// Qualidade do enlace com o veículo.
 struct Enlace {
     int satelites = 0;
-    double sinal_radio_percent = 0.0;  // 0 a 100
+    double sinal_radio_percent = std::numeric_limits<double>::quiet_NaN();  // 0 a 100; NaN = desconhecido
 };
 
 /// Ponto de decolagem. Serve de referência para a distância de retorno.
@@ -77,7 +73,7 @@ struct EstadoVeiculo {
 /// Segundos decorridos entre dois instantes.
 double segundos_entre(Instante inicio, Instante fim);
 
-/// Distância horizontal, em metros. É calculada usando a fórmula de haversine, que obtém a distância de dois pontos em uma esfera.
+/// Distância horizontal, em metros, entre dois pontos (fórmula de haversine).
 double distancia_entre_m(double latitude1, double longitude1,
                          double latitude2, double longitude2);
 

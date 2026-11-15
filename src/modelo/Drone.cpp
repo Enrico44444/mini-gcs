@@ -223,13 +223,12 @@ void Drone::iniciar_telemetria() {
     // Guardamos 0 nesse caso.
     auto h_rc = telemetria.subscribe_rc_status([this](mavsdk::Telemetry::RcStatus rc) {
         atualizar([rc](EstadoVeiculo& estado) {
-            estado.enlace.sinal_radio_percent =
-                std::isnan(rc.signal_strength_percent) ? 0.0 : rc.signal_strength_percent;
+            // NaN significa "sem informação": é mantido de propósito, e o resumo mostra n/d.
+            estado.enlace.sinal_radio_percent = rc.signal_strength_percent;
         });
     });
     impl_->cancelamentos.push_back(
         [&telemetria, h_rc] { telemetria.unsubscribe_rc_status(h_rc); });
-
     // Home: o ponto de decolagem informado pelo autopiloto.
     auto h_home = telemetria.subscribe_home([this](mavsdk::Telemetry::HomePosition casa) {
         atualizar([casa](EstadoVeiculo& estado) {
@@ -285,6 +284,8 @@ void Drone::decolar(double altura_m) {
     if (altura_m <= 0.0) {
         throw std::invalid_argument("a altura de decolagem deve ser maior que zero");
     }
+    // O ArduCopter só aceita takeoff em GUIDED; em outros modos responde NAV_TAKEOFF: FAILED.
+    alterar_modo_de_voo("GUIDED");
     verificar(impl_->acoes->set_takeoff_altitude(static_cast<float>(altura_m)),
               "ajustar altura de decolagem");
     verificar(impl_->acoes->takeoff(), "decolar");
@@ -302,6 +303,8 @@ void Drone::retornar_para_casa() {
 
 void Drone::ir_para(double latitude, double longitude, double altitude_m) {
     exigir_conexao();
+    // goto_location só é aceito em GUIDED.
+    alterar_modo_de_voo("GUIDED");
     const EstadoVeiculo atual = estado();
 
     // goto_location espera altitude absoluta (acima do nível do mar). A altitude

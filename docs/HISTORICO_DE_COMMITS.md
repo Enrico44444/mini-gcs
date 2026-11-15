@@ -89,3 +89,39 @@ Pendente:
 - No simulado, após o pouso o modo continua `RTL`. O ArduPilot real trocaria para `LAND` ou desarmaria. Vale decidir se o simulado deve refletir isso
 - `decolar` no console ainda mostra "ainda não implementado" (Etapa 5)
 - Validação do `Drone` com o SITL continua pendente, como registrado na Etapa 3
+
+
+## Commit 5: Etapa 5, comandos de voo no console e correções
+
+Branch: `etapa-5-console`
+
+Adicionado:
+
+- Comandos `armar`, `desarmar`, `decolar <altura>`, `pousar`, `rtl` e `ir_para <lat> <lon> <altitude>` em `ComandosPadrao.cpp`, cada um como classe própria, chamando diretamente o `Veiculo`
+- Função auxiliar `numero()`, que converte argumentos e lança `ErroDeComando` com o nome do argumento inválido
+- Validação de intervalo em `ir_para` (latitude de -90 a 90, longitude de -180 a 180, altitude positiva) e de altura em `decolar`
+- `tests/teste_simulado.cpp`: teste automatizado com 12 verificações da sequência armar, decolar, deslocar, RTL e pouso, rodado pelo `VeiculoSimulado`
+- `docs/EXECUCAO.md`: comandos que funcionaram para subir o SITL, a GCS e compilar o projeto
+
+Corrigido:
+
+- `Drone::decolar` e `Drone::ir_para` trocam para GUIDED antes de enviar o comando. Sem isso, a decolagem falhava em STABILIZE com `NAV_TAKEOFF: FAILED`
+- `radio` deixou de ser convertido de NaN para zero. O modelo guarda NaN para "sem informação", e o `status` mostra `n/d`
+- `vel_subida` e os demais campos do `status` são arredondados para uma casa decimal, e `-0.0` é exibido como `0.0`
+
+Decisões de projeto:
+
+- O NaN é mantido de propósito no modelo. Um zero seria interpretado como "sinal de rádio nulo", e isso parece uma falha de enlace quando na verdade o autopiloto não reporta o valor
+- A troca para GUIDED acontece dentro de `Drone`, e não no console, para que o comportamento seja o mesmo para quem usa a GCS e para quem usa outra interface
+
+Verificação realizada:
+
+- [x] Teste automatizado: 12 verificações passaram após as mudanças em `Telemetria.cpp`
+- [x] Simulado: `decolar 0` e `decolar abc` recusados com mensagem de uso; `ir_para 1 2` recusado com o uso correto; `radio=95.0 %` e `vel_subida` sem `-0.0`
+- [x] SITL, pela GCS: `armar`, `decolar 10` e `pousar` aceitos; `modo=GUIDED` após o `decolar` sem troca manual; `radio=n/d`; pouso completo com `Hit ground` e `Disarming motors`
+
+Pendente:
+
+- `decolar` sem estar armado retorna `decolar: Failed` do autopiloto. Uma verificação de armamento em `Drone::decolar` daria uma mensagem específica, como o `VeiculoSimulado` já faz
+- No simulado, o modo continua `RTL` após o pouso, em vez de `LAND`
+- Validação do SITL com `Floating point exception` resolvida com GCC 15, mas a causa exata com clang 22 e GCC 16 não foi investigada

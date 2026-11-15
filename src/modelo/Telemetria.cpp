@@ -14,23 +14,38 @@ double radianos(double graus) {
     return graus * PI / 180.0;
 }
 
+/// Arredonda para uma casa decimal e troca -0.0 por 0.0, para não aparecer
+/// "-0.0" na tela quando o valor é zero.
+double para_exibir(double valor) {
+    const double arredondado = std::round(valor * 10.0) / 10.0;
+    return arredondado == 0.0 ? 0.0 : arredondado;
+}
+
 }  // namespace
 
 std::string EstadoVeiculo::resumo() const {
+    std::string radio = "n/d";
+    if (!std::isnan(enlace.sinal_radio_percent)) {
+        std::ostringstream texto;
+        texto << std::fixed << std::setprecision(1)
+              << para_exibir(enlace.sinal_radio_percent) << " %";
+        radio = texto.str();
+    }
+
     std::ostringstream fluxo;
     fluxo << std::fixed << std::setprecision(1)
           << "modo=" << std::left << std::setw(18) << modo_de_voo << std::right
           << " armado=" << (armado ? "sim" : "nao")
           << " em_voo=" << (em_voo ? "sim" : "nao")
-          << " alt_rel=" << std::setw(7) << posicao.altitude_relativa_m << " m"
-          << " vel_solo=" << std::setw(5) << velocidade.solo_ms << " m/s"
-          << " vel_subida=" << std::setw(5) << velocidade.subida_ms << " m/s"
-          << " dist_home=" << std::setw(7) << home.distancia_m(posicao) << " m"
+          << " alt_rel=" << std::setw(7) << para_exibir(posicao.altitude_relativa_m) << " m"
+          << " vel_solo=" << std::setw(5) << para_exibir(velocidade.solo_ms) << " m/s"
+          << " vel_subida=" << std::setw(5) << para_exibir(velocidade.subida_ms) << " m/s"
+          << " dist_home=" << std::setw(7) << para_exibir(home.distancia_m(posicao)) << " m"
           << " sat=" << enlace.satelites
-          << " radio=" << std::setw(5) << enlace.sinal_radio_percent << " %"
-          << " rolagem=" << std::setw(6) << atitude.rolagem << " deg"
-          << " arfagem=" << std::setw(6) << atitude.arfagem << " deg"
-          << " bat=" << std::setw(5) << bateria.percentual << " %";
+          << " radio=" << std::setw(7) << radio
+          << " rolagem=" << std::setw(6) << para_exibir(atitude.rolagem) << " deg"
+          << " arfagem=" << std::setw(6) << para_exibir(atitude.arfagem) << " deg"
+          << " bat=" << std::setw(5) << para_exibir(bateria.percentual) << " %";
     return fluxo.str();
 }
 
