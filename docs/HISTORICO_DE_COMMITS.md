@@ -125,3 +125,35 @@ Pendente:
 - `decolar` sem estar armado retorna `decolar: Failed` do autopiloto. Uma verificação de armamento em `Drone::decolar` daria uma mensagem específica, como o `VeiculoSimulado` já faz
 - No simulado, o modo continua `RTL` após o pouso, em vez de `LAND`
 - Validação do SITL com `Floating point exception` resolvida com GCC 15, mas a causa exata com clang 22 e GCC 16 não foi investigada
+
+
+## Commit 6: Etapa 6, testes automatizados com ctest
+
+Branch: `etapa-6-testes`
+
+Adicionado:
+
+- `tests/teste_telemetria.cpp`: distância de haversine, `Home::distancia_m`, `segundos_entre` e a formatação do `resumo()` (rádio `n/d`, zero negativo como `0.0`)
+- `tests/teste_historico.cpp`: histórico vazio, ordem de chegada, tempo relativo à amostra mais antiga, capacidade com descarte das mais antigas, `limpar()` e leitura simultânea ao registro em outra thread
+- `tests/teste_paineis.cpp`: `GraficoTempo` (mensagem de espera, título, último valor, marcas nos pontos, valor constante, janela de tempo na escala) e `HorizonteArtificial` (mensagem de espera, número de linhas, modo de voo, efeito da arfagem)
+- `CMakeLists.txt`: bloco `ctest` com quatro testes, cada um com a lista de fontes de que precisa. O teste do simulado tem limite de 150 s e rótulo `lento`
+
+Corrigido:
+
+- Nada no código de produção. Os testes foram escritos sobre o comportamento atual, e nenhum falhou por defeito real
+
+Verificação realizada:
+
+- [x] Os quatro testes passam com `ctest` em uma cópia do projeto sem MAVSDK, usando CMake 4.4
+- [x] Teste do simulado: 12 verificações, como na Etapa 4
+- [x] Testes rápidos rodam em menos de 1 segundo, e o simulado leva cerca de 40 segundos
+
+Decisões de projeto:
+
+- Os testes de `Historico` e dos painéis não usam o MAVSDK, porque recebem `EstadoVeiculo` montado à mão. Isso permite testá-los sem o SITL
+- O painel devolve o quadro como texto, por isso os testes comparam a saída em vez de olhar a tela
+- A checagem da janela de tempo verifica o rótulo da escala vertical, e não o valor 100 em qualquer lugar, porque o eixo de tempo também mostra o instante final
+
+Pendente:
+
+- `numero(valores.back(), 0)` em `GraficoTempo` mostra o último valor com uma casa decimal (`10.0 m`), porque o segundo argumento é a largura, e não as casas decimais. O teste documenta esse comportamento. Se a intenção era outra, a correção é pequena
