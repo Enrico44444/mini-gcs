@@ -76,9 +76,11 @@ adicionar_teste(teste_telemetria tests/teste_telemetria.cpp ${FONTES_TELEMETRIA}
 adicionar_teste(teste_historico tests/teste_historico.cpp ${FONTES_HISTORICO})
 adicionar_teste(teste_paineis tests/teste_paineis.cpp ${FONTES_PAINEIS})
 adicionar_teste(teste_simulado tests/teste_simulado.cpp ${FONTES_VEICULO})
+adicionar_teste(teste_exportacao tests/teste_exportacao.cpp ${FONTES_HISTORICO})
 
 add_test(NAME telemetria COMMAND teste_telemetria)
 add_test(NAME historico COMMAND teste_historico)
 add_test(NAME paineis COMMAND teste_paineis)
 add_test(NAME simulado COMMAND teste_simulado)
+add_test(NAME exportacao COMMAND teste_exportacao)
 set_tests_properties(simulado PROPERTIES TIMEOUT 150 LABELS "lento")

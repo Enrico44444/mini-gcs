@@ -203,6 +203,27 @@ public:
     }
 };
 
+class Gravar : public Comando {
+public:
+    std::string nome() const override { return "gravar"; }
+    std::string uso() const override { return "gravar <arquivo.csv>"; }
+    std::string ajuda() const override {
+        return "grava a telemetria recebida em um arquivo CSV (ex.: gravar voo1.csv)";
+    }
+
+    void executar(EstacaoDeControle& estacao,
+                  const std::vector<std::string>& argumentos) override {
+        if (argumentos.size() != 1) {
+            throw ErroDeComando("uso: " + uso());
+        }
+        if (estacao.historico().vazio()) {
+            throw ErroDeComando("ainda não há telemetria para gravar");
+        }
+        const std::size_t amostras = estacao.historico().exportar_csv(argumentos.front());
+        std::cout << amostras << " amostras gravadas em " << argumentos.front() << '\n';
+    }
+};
+
 class Sair : public Comando {
 public:
     std::string nome() const override { return "sair"; }
@@ -228,6 +249,7 @@ RegistroDeComandos comandos_padrao() {
     registro.registrar(std::make_unique<Pousar>());
     registro.registrar(std::make_unique<Rtl>());
     registro.registrar(std::make_unique<IrPara>());
+    registro.registrar(std::make_unique<Gravar>());
     registro.registrar(std::make_unique<Sair>());
     return registro;
 }

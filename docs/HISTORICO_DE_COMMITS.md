@@ -185,3 +185,31 @@ Pendente:
 
 - Fita lateral de altitude e de velocidade, como sugerido no `TODO` original do horizonte
 - Marcar o instante da decolagem no gráfico
+
+
+## Commit 8: Etapa 8, exportação de dados
+
+Branch: `etapa-8-exportacao`
+
+Adicionado:
+
+- `Historico::escrever_csv` e `Historico::exportar_csv`: uma linha de cabeçalho e uma linha por amostra, com tempo, modo, flags, posição, atitude, bateria, velocidades, satélites, rádio, home e distância ao home
+- Comando `gravar <arquivo.csv>` no console, com mensagem de erro se não houver telemetria
+- `tests/teste_exportacao.cpp`: cinco verificações de cabeçalho, número de colunas, escape de vírgulas e aspas, rádio desconhecido como campo vazio, e erro para caminho inválido
+
+Decisões de projeto:
+
+- A escrita copia o histórico sob a trava e grava fora dela, para o disco não atrasar a telemetria
+- Rádio desconhecido vira campo vazio, e não zero, pelo mesmo motivo que o `status` mostra `n/d`
+
+Verificação realizada:
+
+- [x] Teste automatizado de exportação: 12 verificações passando
+- [x] `ComandosPadrao.cpp` compila sem avisos com `-Wall -Wextra -Wpedantic`
+- [x] `gravar` testado na GCS com o simulado
+- [x] `gravar` testado na GCS com o SITL
+
+Pendente:
+
+- O histórico guarda só as últimas 2000 amostras. Um voo longo é exportado só a partir da janela final
+- O comando sobrescreve o arquivo se ele já existir, sem perguntar

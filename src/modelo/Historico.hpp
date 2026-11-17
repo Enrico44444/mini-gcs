@@ -1,13 +1,15 @@
 // Buffer circular com os últimos estados recebidos do veículo.
 //
-// É o que alimenta os gráficos. Fica registrado como observador do veículo,
-// portanto não sabe de onde a telemetria vem.
+// É o que alimenta os gráficos e a exportação para CSV. Fica registrado como
+// observador do veículo, portanto não sabe de onde a telemetria vem.
 #pragma once
 
 #include <cstddef>
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <ostream>
+#include <string>
 #include <vector>
 
 #include "modelo/Telemetria.hpp"
@@ -44,8 +46,12 @@ public:
     Serie serie(const Extrator& extrator) const;
     void limpar();
 
-    // TODO (aluno): exportar o histórico para CSV/JSON e analisar o voo depois
-    // (`void exportar_csv(const std::string& caminho) const;`).
+    /// Escreve o histórico em CSV: uma linha de cabeçalho e uma linha por amostra.
+    /// Devolve quantas amostras foram escritas.
+    std::size_t escrever_csv(std::ostream& saida) const;
+    /// Grava o histórico em um arquivo CSV, sobrescrevendo o que houver nele.
+    /// Lança std::runtime_error se o arquivo não puder ser criado ou gravado.
+    std::size_t exportar_csv(const std::string& caminho) const;
 
 private:
     mutable std::mutex mutex_;
