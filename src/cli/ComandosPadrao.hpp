@@ -1,15 +1,14 @@
-// Fábrica dos comandos que já vêm no esqueleto.
+// Fábrica dos comandos da estação de controle.
 #pragma once
 
 #include "cli/Comando.hpp"
 
 namespace gcs {
 
-/// Monta o registro com os comandos de exemplo.
-///
-/// TODO (aluno): registre aqui os seus comandos novos — `armar`, `decolar`,
-/// `pousar`, `rtl`, `missao`, `gravar`, `limpar`... As classes ficam em
-/// ComandosPadrao.cpp; copie uma delas como modelo.
+/// Monta o registro com todos os comandos do console.
+
+/// Cada comando é uma classe pequena em ComandosPadrao.cpp, registrada aqui.
+/// Para acrescentar um comando, crie a classe e adicione uma linha de registro.
 RegistroDeComandos comandos_padrao();
 
 }  // namespace gcs
