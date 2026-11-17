@@ -157,3 +157,31 @@ Decisões de projeto:
 Pendente:
 
 - `numero(valores.back(), 0)` em `GraficoTempo` mostra o último valor com uma casa decimal (`10.0 m`), porque o segundo argumento é a largura, e não as casas decimais. O teste documenta esse comportamento. Se a intenção era outra, a correção é pequena
+
+## Commit 7: Etapa 7, visualização
+
+Branch: `etapa-7-visualizacao`
+
+Adicionado:
+
+- Campos `rumo`, `satelites`, `subida`, `tensao` e `velocidade` no catálogo do `plotar`
+- Gráfico com linha: amostras vizinhas são ligadas com `.`, e cada amostra continua marcada com `*`
+- Horizonte com escada de arfagem (traços a cada 10 graus, com números) que acompanham a inclinação da rolagem
+- Arco de rolagem no topo, com marcas e um ponteiro na rolagem atual
+- Fita de rumo na base, com traço a cada 30 graus e as letras N, L, S e O
+- Alertas em vermelho na caixa de leituras: rolagem acima de 45 graus e bateria abaixo de 20 %
+
+Decisões de projeto:
+
+- Bateria igual a zero significa "sem leitura", e não bateria descarregada. Por isso o alerta de bateria só dispara com um valor positivo
+- Os traços da escada são desenhados onde a altura relativa vale o degrau, e não em linhas fixas. Assim eles acompanham a inclinação sem cálculo extra
+
+Verificação realizada:
+
+- [x] Testes automatizados de painéis: 12 verificações, incluindo linha ligando amostras, escada, arco, fita de rumo e alertas
+- [x] `ctest` com os quatro testes passando
+
+Pendente:
+
+- Fita lateral de altitude e de velocidade, como sugerido no `TODO` original do horizonte
+- Marcar o instante da decolagem no gráfico

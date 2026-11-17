@@ -35,11 +35,8 @@ private:
     double janela_s_;  // quantos segundos mostrar de uma vez
 };
 
-/// Catálogo consultado pelo comando `plotar`.
-///
-/// TODO (aluno): acrescente campos novos aqui — velocidade no solo, taxa de
-/// subida, tensão da bateria, número de satélites, rumo... Cada entrada nova já
-/// aparece sozinha no `plotar` e no `ajuda`, sem mexer em mais nada.
+/// Catálogo consultado pelo comando `plotar`. Para acrescentar um campo, basta
+/// uma entrada aqui: ele aparece sozinho no `plotar` e no `ajuda`.
 const std::map<std::string, GraficoTempo::Campo>& campos_disponiveis();
 
 /// "altitude, bateria, ..." — usado nas mensagens de ajuda e de erro.

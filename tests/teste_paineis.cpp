@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "modelo/Historico.hpp"
 #include "visual/GraficoTempo.hpp"
@@ -32,6 +33,26 @@ gcs::EstadoVeiculo amostra(double altitude, double segundos,
 
 std::size_t contar(const std::string& texto, char alvo) {
     return static_cast<std::size_t>(std::count(texto.begin(), texto.end(), alvo));
+}
+
+/// Conta caracteres dentro da grade do gráfico: tudo depois da barra `|` de cada
+/// linha. Assim os pontos dos rótulos numéricos (5.0, 0.5...) não entram.
+std::size_t contar_na_grade(const std::string& quadro, char alvo) {
+    std::size_t total = 0;
+    std::size_t inicio = 0;
+    while (inicio < quadro.size()) {
+        std::size_t fim = quadro.find('\n', inicio);
+        if (fim == std::string::npos) {
+            fim = quadro.size();
+        }
+        const std::string linha = quadro.substr(inicio, fim - inicio);
+        const std::size_t barra = linha.find('|');
+        if (barra != std::string::npos) {
+            total += contar(linha.substr(barra), alvo);
+        }
+        inicio = fim + 1;
+    }
+    return total;
 }
 
 bool contem(const std::string& texto, const std::string& trecho) {
@@ -121,6 +142,71 @@ int main() {
         const gcs::HorizonteArtificial horizonte;
         verificar(horizonte.quadro(plano) != horizonte.quadro(subindo),
                   "arfagem muda o desenho do horizonte");
+    }
+
+    // --- Campos do gráfico (plotar) --------------------------------------
+    {
+        const std::vector<std::string> esperados{
+            "altitude", "bateria", "rumo", "satelites", "subida", "tensao", "velocidade"};
+        bool todos = true;
+        for (const std::string& campo : esperados) {
+            todos = todos && gcs::campos_disponiveis().count(campo) == 1;
+        }
+        verificar(todos, "plotar aceita altitude, bateria, rumo, satélites, subida, tensão e velocidade");
+    }
+    {
+        // A linha que liga as amostras preenche os espaços entre elas.
+        gcs::Historico historico;
+        historico.registrar(amostra(0.0, 0.0));
+        historico.registrar(amostra(5.0, 1.0));
+        historico.registrar(amostra(10.0, 2.0));
+        const std::string quadro = grafico_altitude(60.0).quadro(historico);
+        verificar(contar_na_grade(quadro, '.') >= 40,
+                  "gráfico liga as amostras vizinhas com uma linha");
+    }
+    {
+        // Amostra única não gera linha.
+        gcs::Historico historico;
+        historico.registrar(amostra(5.0, 0.0));
+        verificar(contar_na_grade(grafico_altitude(60.0).quadro(historico), '.') == 0,
+                  "uma amostra só não gera linha");
+    }
+
+    // --- Escada de arfagem e rumo ------------------------------------------
+    {
+        gcs::Historico historico;
+        historico.registrar(amostra(0.0, 0.0));
+        const std::string quadro = gcs::HorizonteArtificial(72, 21).quadro(historico);
+        verificar(contar(quadro, '-') >= 1 && contem(quadro, "-10") && contem(quadro, "20"),
+                  "escada de arfagem traça os degraus e mostra os números");
+        verificar(contem(quadro, "N"), "fita de rumo mostra N no rumo zero");
+        verificar(contar(quadro, '|') >= 5, "arco de rolagem tem as marcas");
+    }
+
+    // --- Alertas ---------------------------------------------------------
+    {
+        gcs::Historico historico;
+        historico.registrar(amostra(0.0, 0.0));
+        verificar(!contem(gcs::HorizonteArtificial(72, 21).quadro(historico), "ALERTA"),
+                  "sem rolagem excessiva nem bateria baixa não há alertas");
+    }
+    {
+        gcs::Historico historico;
+        gcs::EstadoVeiculo rolando = amostra(0.0, 0.0);
+        rolando.atitude.rolagem = 60.0;
+        historico.registrar(rolando);
+        verificar(contem(gcs::HorizonteArtificial(72, 21).quadro(historico),
+                         "ALERTA: rolagem excessiva"),
+                  "rolagem acima de 45 graus dispara alerta");
+    }
+    {
+        gcs::Historico historico;
+        gcs::EstadoVeiculo descarregando = amostra(0.0, 0.0);
+        descarregando.bateria.percentual = 15.0;
+        historico.registrar(descarregando);
+        verificar(contem(gcs::HorizonteArtificial(72, 21).quadro(historico),
+                         "ALERTA: bateria baixa"),
+                  "bateria abaixo de 20 por cento dispara alerta");
     }
 
     std::cout << (falhas == 0 ? "\nTodos os testes dos painéis passaram.\n"

@@ -17,13 +17,17 @@ namespace {
 const std::string COR_SERIE = terminal::frente(0x2A, 0x78, 0xD6);
 const std::string COR_APAGADA = terminal::frente(0x82, 0x81, 0x7C);
 
-constexpr char MARCA[] = "*";
+constexpr char MARCA = '*';     // uma amostra recebida
+constexpr char LIGACAO = '.';   // trecho entre duas amostras vizinhas
 
 std::string numero(double valor, int largura = 8, int decimais = 1) {
     std::ostringstream fluxo;
     fluxo << std::fixed << std::setprecision(decimais) << std::setw(largura) << valor;
     return fluxo.str();
 }
+
+/// (coluna, linha) de uma amostra dentro da grade de caracteres.
+using Ponto = std::pair<int, int>;
 
 }  // namespace
 
@@ -65,22 +69,43 @@ std::string GraficoTempo::quadro(const Historico& historico) const {
     minimo -= folga;
     maximo += folga;
 
-    // 3. Pinta os pontos em uma grade de caracteres.
-    std::vector<std::string> grade(static_cast<std::size_t>(altura_),
-                                   std::string(static_cast<std::size_t>(largura_), ' '));
+    // 3. Converte cada amostra em (coluna, linha), descartando o que cair fora da grade.
     const double duracao = std::max(1e-6, fim - inicio);
     const double amplitude = std::max(1e-6, maximo - minimo);
+    std::vector<Ponto> pontos;
     for (std::size_t i = 0; i < tempos.size(); ++i) {
         const int coluna = static_cast<int>(
             std::lround((tempos[i] - inicio) / duracao * (largura_ - 1)));
         const int linha = static_cast<int>(
             std::lround((maximo - valores[i]) / amplitude * (altura_ - 1)));
         if (coluna >= 0 && coluna < largura_ && linha >= 0 && linha < altura_) {
-            grade[static_cast<std::size_t>(linha)][static_cast<std::size_t>(coluna)] = MARCA[0];
+            pontos.emplace_back(coluna, linha);
         }
     }
 
-    // 4. Monta o texto final. Cada linha termina com LIMPAR_LINHA para apagar
+    // 4. Liga amostras vizinhas com uma linha e depois marca cada amostra.
+    std::vector<std::string> grade(static_cast<std::size_t>(altura_),
+                                   std::string(static_cast<std::size_t>(largura_), ' '));
+    for (std::size_t i = 1; i < pontos.size(); ++i) {
+        const auto [c0, l0] = pontos[i - 1];
+        const auto [c1, l1] = pontos[i];
+        const int passos = std::max({std::abs(c1 - c0), std::abs(l1 - l0), 1});
+        for (int k = 0; k <= passos; ++k) {
+            const double t = static_cast<double>(k) / passos;
+            const auto coluna = static_cast<std::size_t>(std::lround(c0 + (c1 - c0) * t));
+            const auto linha = static_cast<std::size_t>(std::lround(l0 + (l1 - l0) * t));
+            char& celula = grade[linha][coluna];
+            if (celula == ' ') {
+                celula = LIGACAO;
+            }
+        }
+    }
+    for (const Ponto& ponto : pontos) {
+        grade[static_cast<std::size_t>(ponto.second)][static_cast<std::size_t>(ponto.first)] =
+            MARCA;
+    }
+
+    // 5. Monta o texto final. Cada linha termina com LIMPAR_LINHA para apagar
     //    o que sobrou do quadro anterior.
     saida << cabecalho << "   atual: " << numero(valores.back(), 0) << ' '
           << campo_.unidade << terminal::LIMPAR_LINHA << "\n";
@@ -116,6 +141,23 @@ const std::map<std::string, GraficoTempo::Campo>& campos_disponiveis() {
         {"bateria",
          {"Bateria", "%",
           [](const EstadoVeiculo& estado) { return estado.bateria.percentual; }}},
+        {"rumo",
+         {"Rumo", "deg",
+          [](const EstadoVeiculo& estado) { return estado.atitude.guinada; }}},
+        {"satelites",
+         {"Satélites", "sat",
+          [](const EstadoVeiculo& estado) {
+              return static_cast<double>(estado.enlace.satelites);
+          }}},
+        {"subida",
+         {"Velocidade de subida", "m/s",
+          [](const EstadoVeiculo& estado) { return estado.velocidade.subida_ms; }}},
+        {"tensao",
+         {"Tensão da bateria", "V",
+          [](const EstadoVeiculo& estado) { return estado.bateria.tensao_v; }}},
+        {"velocidade",
+         {"Velocidade no solo", "m/s",
+          [](const EstadoVeiculo& estado) { return estado.velocidade.solo_ms; }}},
     };
     return catalogo;
 }
@@ -128,8 +170,7 @@ std::string nomes_dos_campos() {
     return nomes;
 }
 
-// TODO (aluno): ideias de evolução para este painel —
-//  * ligar os pontos com uma linha (interpolar entre colunas vizinhas);
+// Ideias ainda não feitas para este painel:
 //  * marcar o instante da decolagem com uma coluna vertical;
 //  * mostrar duas grandezas comparáveis no mesmo gráfico (com legenda!);
 //  * descobrir a largura real do terminal em vez de usar um valor fixo.
