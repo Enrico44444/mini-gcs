@@ -54,10 +54,8 @@ void Console::tratar(const std::string& linha) {
         estacao_.comandos().obter(nome).executar(estacao_, argumentos);
     } catch (const ErroDeComando& erro) {
         std::cout << "erro: " << erro.what() << '\n';
-    } catch (const NaoImplementado& erro) {
-        std::cout << "ainda não implementado (" << erro.what()
-                  << ") — este é um exercício da disciplina.\n";
-    } catch (const std::exception& erro) {
+    } 
+      catch (const std::exception& erro) {
         std::cout << "falha ao executar '" << nome << "': " << erro.what() << '\n';
     }
 }

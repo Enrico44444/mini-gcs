@@ -21,19 +21,9 @@ public:
 };
 
 /// Modo de voo que o usuário pediu e que esta implementação não aceita.
-/// É um erro de uso, por isso é diferente de NaoImplementado.
 class ErroDeModo : public std::invalid_argument {
 public:
     explicit ErroDeModo(const std::string& mensagem) : std::invalid_argument(mensagem) {}
-};
-
-/// Operação que ainda é exercício da disciplina. O console trata esta exceção
-/// de forma amigável, então dá para registrar o esqueleto de um recurso antes
-/// de implementá-lo.
-class NaoImplementado : public std::logic_error {
-public:
-    explicit NaoImplementado(const std::string& o_que)
-        : std::logic_error(o_que) {}
 };
 
 /// Contrato comum a qualquer veículo: multirrotor, asa fixa, barco, simulador.
